@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masuk Portal - Baitul SmartFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans hero-bg relative min-h-screen flex flex-col justify-center items-center">
+    <div class="absolute inset-0 bg-emerald-900 bg-opacity-70 pattern-overlay"></div>
+
+    <div class="relative z-10 w-full max-w-md p-4">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <a href="index.html" class="inline-flex items-center gap-3 text-white hover:text-emerald-200 transition">
+                <i class="fa-solid fa-mosque text-4xl"></i>
+                <span class="text-3xl font-bold font-amiri tracking-wider">Baitul SmartFlow</span>
+            </a>
+            <p class="text-emerald-100 mt-2 font-medium">Portal Manajemen Masjid</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Tabs -->
+            <div class="flex border-b">
+                <button id="tab-admin" onclick="switchTab('admin')" class="w-1/2 py-4 font-bold text-center border-b-2 transition text-emerald-600 border-emerald-600 bg-emerald-50">
+                    <i class="fa-solid fa-user-shield mr-2"></i> Pengurus (Admin)
+                </button>
+                <button id="tab-member" onclick="switchTab('member')" class="w-1/2 py-4 font-bold text-center border-b-2 transition text-gray-500 border-transparent hover:bg-gray-50">
+                    <i class="fa-solid fa-user-group mr-2"></i> Jamaah (Member)
+                </button>
+            </div>
+
+            <!-- Form -->
+            <div class="p-8">
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <!-- Informasi Kredensial Default -->
+                    <div class="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                        <p class="font-bold mb-1"><i class="fa-solid fa-circle-info mr-1"></i> Informasi Kredensial:</p>
+                        <p id="demo-credentials">User: <b>admin</b> | Pass: <b>admin1234</b></p>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
+                            Username
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa-solid fa-user text-gray-400"></i>
+                            </div>
+                            <input class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 pl-10 pr-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition" id="username" type="text" placeholder="Masukkan username" required value="admin">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                            Password
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa-solid fa-lock text-gray-400"></i>
+                            </div>
+                            <input class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 pl-10 pr-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition" id="password" type="password" placeholder="Masukkan password" required value="admin1234">
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition shadow-lg flex items-center justify-center gap-2" type="submit" id="submitBtn">
+                            <span>Masuk ke Portal</span> <i class="fa-solid fa-right-to-bracket"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div id="registerHint" class="hidden mt-5 pt-4 border-t text-center text-sm text-gray-600">
+                    Belum punya akun jamaah? <a href="register.html" class="font-semibold text-emerald-600 hover:text-emerald-800">Daftar di sini</a>
+                </div>
+            </div>
+            
+            <!-- Footer form -->
+            <div class="bg-gray-50 py-4 text-center border-t text-sm text-gray-600">
+                Lupa kata sandi? Silakan hubungi Sekretariat Masjid.
+            </div>
+        </div>
+        
+        <div class="mt-8 text-center">
+            <a href="index.html" class="text-emerald-100 hover:text-white transition text-sm">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Beranda
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let currentRole = 'admin'; // 'admin' atau 'member'
+
+        function switchTab(role) {
+            currentRole = role;
+            const tabAdmin = document.getElementById('tab-admin');
+            const tabMember = document.getElementById('tab-member');
+            const demoText = document.getElementById('demo-credentials');
+            const inputUsername = document.getElementById('username');
+            const inputPassword = document.getElementById('password');
+            const registerHint = document.getElementById('registerHint');
+
+            if (role === 'admin') {
+            tabAdmin.className = "w-1/2 py-4 font-bold text-center border-b-2 transition text-emerald-600 border-emerald-600 bg-emerald-50";
+            tabMember.className = "w-1/2 py-4 font-bold text-center border-b-2 transition text-gray-500 border-transparent hover:bg-gray-50";
+            demoText.innerHTML = "User: <b>admin</b> | Pass: <b>admin1234</b>";
+            inputUsername.value = "admin";
+            inputPassword.value = "admin1234";
+            registerHint.classList.add('hidden');
+            } else {
+            tabMember.className = "w-1/2 py-4 font-bold text-center border-b-2 transition text-emerald-600 border-emerald-600 bg-emerald-50";
+            tabAdmin.className = "w-1/2 py-4 font-bold text-center border-b-2 transition text-gray-500 border-transparent hover:bg-gray-50";
+            demoText.innerHTML = "User: <b>budi_santoso</b> | Pass: <b>password123</b>";
+            inputUsername.value = "budi_santoso";
+            inputPassword.value = "password123";
+            registerHint.classList.remove('hidden');
+            }        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            // Animasi Loading
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...';
+
+            // Menyesuaikan endpoint API berdasarkan role (tab yang aktif)
+            const endpoint = currentRole === 'admin' 
+                ? 'https://baitul-smartflow-api-1777252841.fly.dev/api/login' 
+                : 'https://baitul-smartflow-api-1777252841.fly.dev/api/login-user';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Sukses!
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Alhamdulillah',
+                        text: 'Berhasil masuk ke portal!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        // Simpan token JWT dan role ke LocalStorage
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('role', currentRole);
+                        localStorage.setItem('username', user);
+                        
+                        // Redirect ke dashboard
+                        window.location.href = 'dashboard.html';
+                    });
+                } else {
+                    // Gagal
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Autentikasi Gagal',
+                        text: data.message || 'Username atau password salah!',
+                        confirmButtonColor: '#059669'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Kesalahan Jaringan',
+                    text: 'Tidak dapat terhubung ke server API.',
+                    confirmButtonColor: '#059669'
+                });
+            } finally {
+                // Kembalikan tombol seperti semula
+                btn.disabled = false;
+                btn.innerHTML = '<span>Masuk ke Portal</span> <i class="fa-solid fa-right-to-bracket"></i>';
+            }
+        }
+    </script>
+</body>
+</html>

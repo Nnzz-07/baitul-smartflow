@@ -1,0 +1,74 @@
+# Baitul SmartFlow - Dokumentasi Proyek
+
+Baitul SmartFlow adalah sistem manajemen masjid modern berbasis web yang terintegrasi dengan API eksternal.
+
+## 1. Cara Menjalankan Aplikasi
+1. Pastikan Anda memiliki Node.js terinstal.
+2. Buka terminal di folder proyek ini.
+3. Instal dependencies (jika belum):
+   ```bash
+   npm install express
+   ```
+4. Jalankan server:
+   ```bash
+   node server.js
+   ```
+5. Akses aplikasi di browser melalui alamat:
+   **http://localhost:777**
+
+## 2. Struktur File
+- `server.js`: Script backend utama menggunakan Express.js.
+- `public/`: Direktori file statis frontend.
+  - `index.html`: Halaman utama (Landing Page).
+  - `login.html`: Halaman portal masuk (Admin & Jamaah).
+  - `register.html`: Halaman pendaftaran akun jamaah baru.
+  - `dashboard.html`: Halaman dashboard interaktif setelah login.
+  - `style.css`: File styling kustom dan konfigurasi visual.
+
+## 3. Fitur Utama
+- **Landing Page Islami**: Desain modern dengan pola geometris, kutipan Al-Qur'an, dan icon masjid.
+- **Jadwal Sholat Real-time**: Mengambil jadwal sholat harian langsung dari API.
+- **Autentikasi Dua Role**: Sistem login terpisah untuk Pengurus (Admin) dan Jamaah (Member).
+- **Pendaftaran Akun**: Jamaah baru dapat mendaftar mandiri via `/register` (POST `/api/register`).
+- **Dashboard Admin** (statistik real-time dari API):
+  - Saldo Kas, Total Zakat, Stok Qurban, Total Aset Inventaris.
+  - **Kelola Kas**: Tambah Infaq, Catat Pengeluaran, lihat seluruh transaksi.
+  - **Data Zakat**: Lihat, verifikasi (Pending → Valid), hapus zakat.
+  - **Stok Qurban**: Lihat seluruh stok hewan qurban beserta foto.
+  - **Transaksi Qurban**: Verifikasi pendaftaran (Pending → Diterima → Disembelih).
+  - **Inventaris**: Tambah, edit, hapus aset (CRUD penuh).
+  - **Mustahik**: Tambah & lihat penerima zakat (8 ashnaf).
+  - **Pengurus**: Tambah & lihat takmir / petugas masjid.
+  - **Unduh Laporan PDF**: Download laporan kas dari endpoint `/api/kas/report`.
+- **Dashboard Member**:
+  - Ringkasan donasi pribadi (Total Zakat, Infaq, Qurban) dari `/api/user/dashboard`.
+  - **Bayar Zakat**: dengan upload bukti transfer (multipart).
+  - **Daftar Qurban**: pilih hewan dari stok tersedia + upload bukti transfer.
+  - **Riwayat Transaksi**: histori zakat, infaq, qurban dari `/api/user/riwayat-transaksi`.
+  - **Laporan Masjid**: ringkasan kas publik untuk transparansi jamaah.
+- **Keamanan**: Fitur Ubah Kata Sandi terintegrasi API (`/api/change-password`) untuk semua pengguna.
+
+## 4. Informasi Kredensial (Terupdate)
+- **Admin**:
+  - Username: `admin`
+  - Password: `admin1234`
+- **Member (Demo)**:
+  - Username: `budi_santoso`
+  - Password: `password123`
+
+## 5. Integrasi API
+Seluruh data diambil secara real-time dari:
+`https://baitul-smartflow-api-1777252841.fly.dev/api`
+
+Endpoint yang digunakan:
+- Auth: `POST /login`, `POST /login-user`, `POST /register`, `POST /change-password`
+- Kas: `GET/POST /kas`, `POST /infaq`, `POST /pengeluaran`, `GET /kas/report` (PDF)
+- Zakat: `GET/POST /zakat`, `PUT/DELETE /zakat/{id}`
+- Qurban: `GET /qurban-stok`, `POST /qurban-beli`, `GET /qurban-transaksi`, `PUT /qurban-transaksi/{id}`
+- Inventory: `GET/POST /inventory`, `PUT/DELETE /inventory/{id}`
+- Lain: `GET/POST /mustahik`, `GET/POST /pengurus`, `GET /prayer-times`
+- User: `GET /user/dashboard`, `GET /user/riwayat-transaksi`
+
+---
+Dokumentasi ini dibuat secara otomatis untuk membantu pengembang memahami alur kerja aplikasi Baitul SmartFlow.
+

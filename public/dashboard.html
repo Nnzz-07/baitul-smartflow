@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Baitul SmartFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    
+    <!-- Navbar Dashboard -->
+    <nav class="bg-emerald-700 text-white shadow-md fixed w-full z-20 top-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-mosque text-2xl"></i>
+                    <span class="text-xl font-bold font-amiri">Baitul SmartFlow</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm bg-emerald-800 py-1 px-3 rounded-full border border-emerald-600 hidden md:inline-block">
+                        <i class="fa-solid fa-user mr-1"></i> <span id="usernameDisplay">Loading...</span>
+                        (<span id="roleDisplay" class="capitalize">Role</span>)
+                    </span>
+                    <button onclick="openChangePasswordModal()" aria-label="Ubah Kata Sandi" class="text-blue-200 hover:text-white bg-blue-800 bg-opacity-20 hover:bg-opacity-40 px-3 py-1.5 rounded transition" title="Ubah Kata Sandi">
+                        <i class="fa-solid fa-key"></i> <span class="hidden md:inline">Ubah Sandi</span>
+                    </button>
+                    <button onclick="handleLogout()" aria-label="Keluar / Logout" class="text-red-200 hover:text-white bg-red-800 bg-opacity-20 hover:bg-opacity-40 px-3 py-1.5 rounded transition">
+                        <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden md:inline">Keluar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content Dashboard -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 font-amiri mb-2">Ahlan wa Sahlan, <span id="greetingName" class="text-emerald-600">User</span>!</h1>
+            <p class="text-gray-600" id="dashboardSubtitle">Berikut adalah ringkasan aktivitas dan informasi masjid.</p>
+        </div>
+
+        <!-- Role Specific Notice -->
+        <div id="adminNotice" class="hidden mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded shadow-sm">
+            <div class="flex items-center">
+                <i class="fa-solid fa-shield-halved text-yellow-600 text-xl mr-3"></i>
+                <p class="text-sm text-yellow-800"><b>Akses Administrator Aktif.</b> Anda memiliki hak penuh untuk mengelola Kas, Zakat, Qurban, dan Inventaris.</p>
+            </div>
+        </div>
+        
+        <div id="memberNotice" class="hidden mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow-sm">
+            <div class="flex items-center">
+                <i class="fa-solid fa-circle-info text-blue-600 text-xl mr-3"></i>
+                <p class="text-sm text-blue-800"><b>Akses Jamaah.</b> Ini adalah dashboard personal Anda untuk melihat riwayat Zakat dan partisipasi Qurban Anda.</p>
+            </div>
+        </div>
+
+        <!-- Dashboard Stats API Loader -->
+        <div id="apiContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Loading Skeleton -->
+            <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-gray-300 animate-pulse col-span-4 text-center">
+                <i class="fa-solid fa-spinner fa-spin text-4xl text-emerald-500 mb-3"></i>
+                <p class="text-gray-500">Mengambil data dari API Server...</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="bg-emerald-50 px-6 py-4 border-b border-emerald-100">
+                <h3 class="font-bold text-emerald-800"><i class="fa-solid fa-list-check mr-2"></i> Menu Navigasi Cepat</h3>
+            </div>
+            <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4" id="quickMenu">
+                <!-- Di-inject via JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-blue-600 px-6 py-4 flex justify-between items-center text-white">
+                <h3 class="text-xl font-bold font-amiri">Ubah Kata Sandi</h3>
+                <button onclick="closeChangePasswordModal()" class="text-blue-200 hover:text-white focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <form id="changePasswordForm" onsubmit="submitChangePassword(event)" class="p-6">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="oldPassword">Kata Sandi Lama</label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="oldPassword" type="password" placeholder="Masukkan kata sandi lama" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="newPassword">Kata Sandi Baru</label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="newPassword" type="password" placeholder="Masukkan kata sandi baru" required>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeChangePasswordModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition">Batal</button>
+                    <button type="submit" id="btnSubmitChangePassword" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-save"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Data Modal (Generic) -->
+    <div id="adminDataModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 flex items-start justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-8 overflow-hidden">
+            <div class="bg-emerald-700 px-6 py-4 flex justify-between items-center text-white">
+                <h3 id="adminModalTitle" class="text-xl font-bold font-amiri">Data</h3>
+                <button onclick="closeAdminModal()" class="text-emerald-100 hover:text-white focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="adminModalContent" class="p-6 max-h-[70vh] overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Public Report Modal (untuk Member: Laporan Masjid) -->
+    <div id="reportModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 flex items-start justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-8 overflow-hidden">
+            <div class="bg-blue-600 px-6 py-4 flex justify-between items-center text-white">
+                <h3 id="reportModalTitle" class="text-xl font-bold font-amiri">Laporan</h3>
+                <button onclick="document.getElementById('reportModal').classList.add('hidden')" class="text-blue-100 hover:text-white focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="reportModalContent" class="p-6 max-h-[70vh] overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Daftar Qurban Modal (Member) -->
+    <div id="qurbanModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8 overflow-hidden">
+            <div class="bg-orange-600 px-6 py-4 flex justify-between items-center text-white">
+                <h3 class="text-xl font-bold font-amiri">Pendaftaran Qurban</h3>
+                <button onclick="closeQurbanModal()" class="text-orange-100 hover:text-white focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <form id="qurbanForm" onsubmit="submitQurban(event)" class="p-6">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="namaPembeli">Nama Pekurban</label>
+                    <input class="border border-gray-300 rounded-lg w-full py-2 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500" id="namaPembeli" type="text" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="hewanQurban">Pilih Hewan</label>
+                    <select class="border border-gray-300 rounded-lg w-full py-2 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500" id="hewanQurban" required>
+                        <option value="">Memuat stok hewan...</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="buktiQurban">Bukti Transfer (Opsional)</label>
+                    <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" id="buktiQurban" type="file" accept="image/*">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeQurbanModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition">Batal</button>
+                    <button type="submit" id="btnSubmitQurban" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> Daftar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Zakat Modal -->
+    <div id="zakatModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-emerald-600 px-6 py-4 flex justify-between items-center text-white">
+                <h3 class="text-xl font-bold font-amiri">Formulir Pembayaran Zakat</h3>
+                <button onclick="closeZakatModal()" class="text-emerald-200 hover:text-white focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <form id="zakatForm" onsubmit="submitZakat(event)" class="p-6">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="namaMuzakki">Nama Muzakki</label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500" id="namaMuzakki" type="text" placeholder="Contoh: Hamba Allah" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="jenisZakat">Jenis Zakat</label>
+                    <select class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500" id="jenisZakat" required>
+                        <option value="Zakat Fitrah">Zakat Fitrah</option>
+                        <option value="Zakat Mal">Zakat Mal</option>
+                        <option value="Fidyah">Fidyah</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="nominalZakat">Nominal (Rp)</label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500" id="nominalZakat" type="number" min="1000" placeholder="45000" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="buktiTransfer">Bukti Transfer (Opsional)</label>
+                    <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition" id="buktiTransfer" type="file" accept="image/*">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeZakatModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition">Batal</button>
+                    <button type="submit" id="btnSubmitZakat" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> Kirim Zakat
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://baitul-smartflow-api-1777252841.fly.dev/api';
+
+        // Cek autentikasi saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const role = localStorage.getItem('role');
+            const username = localStorage.getItem('username');
+
+            if (!token) {
+                // Belum login, tendang kembali ke login
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Tampilkan data user
+            document.getElementById('usernameDisplay').innerText = username;
+            document.getElementById('greetingName').innerText = username;
+            document.getElementById('roleDisplay').innerText = role;
+
+            if (role === 'admin') {
+                document.getElementById('adminNotice').classList.remove('hidden');
+                renderAdminDashboard();
+            } else {
+                document.getElementById('memberNotice').classList.remove('hidden');
+                fetchMemberDashboardData(token);
+                renderMemberMenu();
+            }
+        });
+
+        function showFeature(featureName) {
+            Swal.fire({
+                title: 'Fitur ' + featureName,
+                text: 'Fitur ini belum terhubung ke API (sedang dalam tahap pengembangan).',
+                icon: 'info',
+                confirmButtonColor: '#059669',
+            });
+        }
+
+        // Helper: format Rupiah
+        function rupiah(n) {
+            return 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+        }
+
+        // Helper: format tanggal Indonesia
+        function formatTanggal(d) {
+            if (!d) return '-';
+            try { return new Date(d).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }); }
+            catch(e) { return d; }
+        }
+
+        // Helper: fetch JSON dengan auth header
+        async function apiFetch(path, opts = {}) {
+            const token = localStorage.getItem('token');
+            const headers = Object.assign({}, opts.headers || {});
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            if (opts.body && !(opts.body instanceof FormData) && !headers['Content-Type']) {
+                headers['Content-Type'] = 'application/json';
+            }
+            const res = await fetch(API_BASE + path, Object.assign({}, opts, { headers }));
+            return res;
+        }
+
+        function handleLogout() {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Sesi Anda akan diakhiri.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                cancelButtonColor: '#dc2626',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    localStorage.removeItem('username');
+                    window.location.href = 'login.html';
+                }
+            })
+        }
+
+        // --- Change Password Functions ---
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+            document.getElementById('changePasswordForm').reset();
+        }
+
+        async function submitChangePassword(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btnSubmitChangePassword');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+
+            try {
+                const response = await apiFetch('/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ oldPassword, newPassword })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: 'Kata sandi berhasil diubah! Silakan login kembali dengan sandi baru.',
+                        confirmButtonColor: '#059669'
+                    }).then(() => {
+                        // Paksa user untuk login kembali dengan password baru
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('role');
+                        localStorage.removeItem('username');
+                        window.location.href = 'login.html';
+                    });
+                } else {
+                    Swal.fire('Gagal', data.message || data.error || 'Kata sandi lama salah atau gagal mengubah sandi.', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Kesalahan', 'Gagal terhubung ke server API.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan';
+            }
+        }
+
+        // Render Dashboard untuk Admin
+        async function renderAdminDashboard() {
+            // Tampilkan skeleton dulu
+            document.getElementById('apiContent').innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-emerald-500 animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
+                    <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500 animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
+                    <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-orange-500 animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
+                    <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-purple-500 animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
+                    <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+            `;
+
+            document.getElementById('quickMenu').innerHTML = `
+                <button onclick="openAdminDataModal('kas')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-cash-register block text-3xl mb-2 text-emerald-500"></i> Kelola Kas
+                </button>
+                <button onclick="openAdminDataModal('zakat')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-scale-balanced block text-3xl mb-2 text-emerald-500"></i> Data Zakat
+                </button>
+                <button onclick="openAdminDataModal('qurban-stok')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-cow block text-3xl mb-2 text-emerald-500"></i> Stok Qurban
+                </button>
+                <button onclick="openAdminDataModal('qurban-transaksi')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-file-invoice block text-3xl mb-2 text-emerald-500"></i> Transaksi Qurban
+                </button>
+                <button onclick="openAdminDataModal('inventory')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-clipboard-list block text-3xl mb-2 text-emerald-500"></i> Inventaris
+                </button>
+                <button onclick="openAdminDataModal('mustahik')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-people-group block text-3xl mb-2 text-emerald-500"></i> Mustahik
+                </button>
+                <button onclick="openAdminDataModal('pengurus')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-user-tie block text-3xl mb-2 text-emerald-500"></i> Pengurus
+                </button>
+                <button onclick="downloadKasReport()" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-file-pdf block text-3xl mb-2 text-emerald-500"></i> Unduh Laporan PDF
+                </button>
+            `;
+
+            // Fetch real stats secara parallel
+            try {
+                const [kasRes, zakatRes, qurbanRes, invRes] = await Promise.all([
+                    apiFetch('/kas'),
+                    apiFetch('/zakat'),
+                    apiFetch('/qurban-stok'),
+                    apiFetch('/inventory')
+                ]);
+
+                const kas = kasRes.ok ? (await kasRes.json()).data || [] : [];
+                const zakat = zakatRes.ok ? (await zakatRes.json()).data || [] : [];
+                const qurban = qurbanRes.ok ? (await qurbanRes.json()).data || [] : [];
+                const inv = invRes.ok ? (await invRes.json()).data || [] : [];
+
+                const saldoKas = kas.reduce((acc, k) => acc + (k.jenis === 'Pemasukan' ? k.nominal : -k.nominal), 0);
+                const totalZakat = zakat.reduce((acc, z) => acc + (z.nominal || 0), 0);
+                const stokQurban = qurban.reduce((acc, q) => acc + (q.stok || 0), 0);
+                const totalAset = inv.reduce((acc, i) => acc + (i.jumlah || 0), 0);
+
+                document.getElementById('apiContent').innerHTML = `
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-emerald-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Saldo Kas</p>
+                                <h3 class="text-2xl font-bold text-gray-800">${rupiah(saldoKas)}</h3>
+                                <p class="text-xs text-gray-400 mt-1">${kas.length} transaksi</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xl"><i class="fa-solid fa-wallet"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Penerimaan Zakat</p>
+                                <h3 class="text-2xl font-bold text-gray-800">${rupiah(totalZakat)}</h3>
+                                <p class="text-xs text-gray-400 mt-1">${zakat.length} transaksi</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-orange-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Stok Qurban</p>
+                                <h3 class="text-2xl font-bold text-gray-800">${stokQurban} Ekor</h3>
+                                <p class="text-xs text-gray-400 mt-1">${qurban.length} jenis hewan</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xl"><i class="fa-solid fa-cow"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-purple-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Total Aset</p>
+                                <h3 class="text-2xl font-bold text-gray-800">${totalAset} Item</h3>
+                                <p class="text-xs text-gray-400 mt-1">${inv.length} jenis aset</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xl"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('apiContent').innerHTML = `
+                    <div class="col-span-4 bg-red-50 border border-red-200 p-6 rounded-xl text-center text-red-600">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i>
+                        <p>Gagal memuat statistik admin dari API.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Fetch Dashboard Member langsung dari API Real (Protected Endpoint)
+        async function fetchMemberDashboardData(token) {
+            try {
+                const response = await apiFetch('/user/dashboard');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Format tampilan card bedasarkan data real API Member
+                    document.getElementById('apiContent').innerHTML = `
+                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-emerald-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Total Zakat</p>
+                                    <h3 class="text-2xl font-bold text-gray-800">
+                                        Rp ${(data.data?.total_zakat || 0).toLocaleString('id-ID')}
+                                    </h3>
+                                </div>
+                                <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xl"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Total Infaq</p>
+                                    <h3 class="text-2xl font-bold text-gray-800">
+                                        Rp ${(data.data?.total_infaq || 0).toLocaleString('id-ID')}
+                                    </h3>
+                                </div>
+                                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-orange-500 col-span-1 md:col-span-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Partisipasi Qurban</p>
+                                    <h3 class="text-2xl font-bold text-gray-800">${data.data?.total_qurban || 0} Ekor <span class="text-sm font-normal text-gray-500">tercatat</span></h3>
+                                </div>
+                                <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xl"><i class="fa-solid fa-cow"></i></div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('Gagal mengambil data member');
+                }
+            } catch (error) {
+                document.getElementById('apiContent').innerHTML = `
+                    <div class="bg-red-50 p-6 rounded-xl shadow-md border border-red-200 col-span-4 text-center text-red-600">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i>
+                        <p>Gagal memuat data dari API. Pastikan token masih berlaku.</p>
+                        <button onclick="handleLogout()" class="mt-4 underline text-sm">Login ulang</button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderMemberMenu() {
+            document.getElementById('quickMenu').innerHTML = `
+                <button onclick="openZakatModal()" class="p-4 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-center text-blue-700 font-medium">
+                    <i class="fa-solid fa-money-bill-transfer block text-3xl mb-2 text-blue-500"></i> Bayar Zakat
+                </button>
+                <button onclick="openQurbanModal()" class="p-4 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-center text-blue-700 font-medium">
+                    <i class="fa-solid fa-cow block text-3xl mb-2 text-blue-500"></i> Daftar Qurban
+                </button>
+                <button onclick="showRiwayatTransaksi()" class="p-4 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-center text-blue-700 font-medium">
+                    <i class="fa-solid fa-clock-rotate-left block text-3xl mb-2 text-blue-500"></i> Riwayat Transaksi
+                </button>
+                <button onclick="showLaporanMasjid()" class="p-4 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-center text-blue-700 font-medium">
+                    <i class="fa-solid fa-chart-pie block text-3xl mb-2 text-blue-500"></i> Laporan Masjid
+                </button>
+            `;
+        }
+
+        // --- Riwayat Transaksi Member ---
+        async function showRiwayatTransaksi() {
+            const modal = document.getElementById('reportModal');
+            const title = document.getElementById('reportModalTitle');
+            const body = document.getElementById('reportModalContent');
+            title.innerText = 'Riwayat Transaksi Saya';
+            body.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500"></i><p class="mt-2 text-gray-500">Memuat...</p></div>';
+            modal.classList.remove('hidden');
+            try {
+                const res = await apiFetch('/user/riwayat-transaksi');
+                if (!res.ok) throw new Error('fail');
+                const json = await res.json();
+                const zakat = json.data?.zakat || [];
+                const infaq = json.data?.infaq || [];
+                const qurban = json.data?.qurban || [];
+
+                const renderList = (label, items, formatter) => {
+                    if (!items.length) return `<div class="mb-4"><h4 class="font-bold text-gray-700 mb-2">${label}</h4><p class="text-gray-400 text-sm italic">Belum ada riwayat.</p></div>`;
+                    return `<div class="mb-6">
+                        <h4 class="font-bold text-gray-700 mb-2">${label} <span class="text-xs text-gray-500">(${items.length})</span></h4>
+                        <div class="overflow-x-auto"><table class="w-full text-sm"><tbody>${items.map(formatter).join('')}</tbody></table></div>
+                    </div>`;
+                };
+
+                body.innerHTML = `
+                    ${renderList('Zakat', zakat, z => `<tr class="border-b">
+                        <td class="p-2">${formatTanggal(z.tanggal || z.created_at)}</td>
+                        <td class="p-2">${z.jenis_zakat}</td>
+                        <td class="p-2 text-right font-bold">${rupiah(z.nominal)}</td>
+                        <td class="p-2"><span class="px-2 py-1 text-xs rounded-full ${z.status === 'Valid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${z.status}</span></td>
+                    </tr>`)}
+                    ${renderList('Infaq', infaq, i => `<tr class="border-b">
+                        <td class="p-2">${formatTanggal(i.tanggal || i.created_at)}</td>
+                        <td class="p-2">${i.sumber_kategori || '-'}</td>
+                        <td class="p-2 text-right font-bold">${rupiah(i.nominal)}</td>
+                        <td class="p-2 text-gray-500 text-xs">${i.keterangan || ''}</td>
+                    </tr>`)}
+                    ${qurban.length ? renderList('Qurban', qurban, q => `<tr class="border-b">
+                        <td class="p-2">${formatTanggal(q.created_at)}</td>
+                        <td class="p-2">${q.qurban_stok?.jenis_hewan || '-'}</td>
+                        <td class="p-2"><span class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700">${q.status}</span></td>
+                    </tr>`) : ''}
+                `;
+            } catch (e) {
+                body.innerHTML = `<div class="text-center py-10 text-red-500"><i class="fa-solid fa-circle-exclamation text-3xl mb-2"></i><p>Gagal memuat riwayat.</p></div>`;
+            }
+        }
+
+        // --- Laporan Masjid Publik ---
+        async function showLaporanMasjid() {
+            const modal = document.getElementById('reportModal');
+            const title = document.getElementById('reportModalTitle');
+            const body = document.getElementById('reportModalContent');
+            title.innerText = 'Transparansi Laporan Masjid';
+            body.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500"></i><p class="mt-2 text-gray-500">Memuat ringkasan...</p></div>';
+            modal.classList.remove('hidden');
+            try {
+                const [kasRes, zakatRes, qurbanRes] = await Promise.all([
+                    apiFetch('/kas'),
+                    apiFetch('/zakat'),
+                    apiFetch('/qurban-stok')
+                ]);
+                const kas = kasRes.ok ? (await kasRes.json()).data || [] : [];
+                const zakat = zakatRes.ok ? (await zakatRes.json()).data || [] : [];
+                const qurban = qurbanRes.ok ? (await qurbanRes.json()).data || [] : [];
+
+                const totalMasuk = kas.filter(k => k.jenis === 'Pemasukan').reduce((a,b) => a + (b.nominal||0), 0);
+                const totalKeluar = kas.filter(k => k.jenis === 'Pengeluaran').reduce((a,b) => a + (b.nominal||0), 0);
+                const saldo = totalMasuk - totalKeluar;
+                const totalZakat = zakat.reduce((a,b) => a + (b.nominal||0), 0);
+                const stokQurban = qurban.reduce((a,b) => a + (b.stok||0), 0);
+
+                const recent = kas.slice(0, 10);
+                body.innerHTML = `
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                            <p class="text-xs text-emerald-700 uppercase font-bold">Total Pemasukan</p>
+                            <p class="text-lg font-bold text-emerald-900">${rupiah(totalMasuk)}</p>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+                            <p class="text-xs text-red-700 uppercase font-bold">Total Pengeluaran</p>
+                            <p class="text-lg font-bold text-red-900">${rupiah(totalKeluar)}</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <p class="text-xs text-blue-700 uppercase font-bold">Saldo Kas</p>
+                            <p class="text-lg font-bold text-blue-900">${rupiah(saldo)}</p>
+                        </div>
+                        <div class="bg-orange-50 p-4 rounded-lg border border-orange-100">
+                            <p class="text-xs text-orange-700 uppercase font-bold">Stok Qurban</p>
+                            <p class="text-lg font-bold text-orange-900">${stokQurban} ekor</p>
+                        </div>
+                    </div>
+                    <div class="bg-white border rounded-lg p-4">
+                        <h4 class="font-bold text-gray-700 mb-3">10 Transaksi Kas Terbaru</h4>
+                        ${recent.length ? `<div class="overflow-x-auto"><table class="w-full text-sm">
+                            <thead class="bg-gray-50 text-xs uppercase text-gray-600"><tr>
+                                <th class="p-2 text-left">Tanggal</th>
+                                <th class="p-2 text-left">Jenis</th>
+                                <th class="p-2 text-left">Kategori</th>
+                                <th class="p-2 text-right">Nominal</th>
+                            </tr></thead><tbody>
+                            ${recent.map(k => `<tr class="border-b">
+                                <td class="p-2">${formatTanggal(k.tanggal)}</td>
+                                <td class="p-2 ${k.jenis === 'Pemasukan' ? 'text-green-600' : 'text-red-600'} font-medium">${k.jenis}</td>
+                                <td class="p-2">${k.sumber_kategori || '-'}</td>
+                                <td class="p-2 text-right font-bold">${rupiah(k.nominal)}</td>
+                            </tr>`).join('')}
+                        </tbody></table></div>` : '<p class="text-gray-400 italic text-sm">Belum ada transaksi.</p>'}
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4 text-center"><i class="fa-solid fa-circle-info mr-1"></i> Total Zakat tercatat: ${rupiah(totalZakat)} dari ${zakat.length} muzakki</p>
+                `;
+            } catch (e) {
+                body.innerHTML = `<div class="text-center py-10 text-red-500"><i class="fa-solid fa-circle-exclamation text-3xl mb-2"></i><p>Gagal memuat laporan.</p></div>`;
+            }
+        }
+
+        // --- Daftar Qurban (Member) ---
+        async function openQurbanModal() {
+            const select = document.getElementById('hewanQurban');
+            const namaInput = document.getElementById('namaPembeli');
+            namaInput.value = localStorage.getItem('username') || '';
+            select.innerHTML = '<option value="">Memuat stok hewan...</option>';
+            document.getElementById('qurbanModal').classList.remove('hidden');
+            try {
+                const res = await apiFetch('/qurban-stok');
+                const json = await res.json();
+                const hewan = (json.data || []).filter(h => h.stok > 0);
+                if (!hewan.length) {
+                    select.innerHTML = '<option value="">Tidak ada stok tersedia</option>';
+                } else {
+                    select.innerHTML = '<option value="">-- Pilih hewan --</option>' + hewan.map(h => 
+                        `<option value="${h.id}">${h.jenis_hewan} - ${rupiah(h.harga)} (Stok: ${h.stok})</option>`
+                    ).join('');
+                }
+            } catch (e) {
+                select.innerHTML = '<option value="">Gagal memuat data</option>';
+            }
+        }
+
+        function closeQurbanModal() {
+            document.getElementById('qurbanModal').classList.add('hidden');
+            document.getElementById('qurbanForm').reset();
+        }
+
+        async function submitQurban(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmitQurban');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+            try {
+                const fd = new FormData();
+                fd.append('nama_pembeli', document.getElementById('namaPembeli').value);
+                fd.append('hewan_id', document.getElementById('hewanQurban').value);
+                const file = document.getElementById('buktiQurban').files[0];
+                if (file) fd.append('image', file);
+
+                const res = await apiFetch('/qurban-beli', { method: 'POST', body: fd });
+                const text = await res.text();
+                let data = {};
+                try { data = JSON.parse(text); } catch(_) {}
+
+                if (res.ok) {
+                    Swal.fire('Alhamdulillah', 'Pendaftaran qurban berhasil dikirim. Silakan tunggu konfirmasi admin.', 'success').then(() => {
+                        closeQurbanModal();
+                        fetchMemberDashboardData(localStorage.getItem('token'));
+                    });
+                } else {
+                    Swal.fire('Gagal', data.message || data.error || 'Gagal mendaftar qurban.', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Daftar';
+            }
+        }
+
+        // --- Admin Data Modal Functions ---
+        async function openAdminDataModal(type) {
+            document.getElementById('adminDataModal').classList.remove('hidden');
+            const content = document.getElementById('adminModalContent');
+            const title = document.getElementById('adminModalTitle');
+            
+            content.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-4xl text-emerald-500 mb-3"></i><p>Memuat Data...</p></div>';
+            
+            try {
+                let url = '';
+                let columns = [];
+                let rowRenderer = null;
+                let actionHTML = '';
+
+                if (type === 'kas') {
+                    title.innerText = 'Kelola Kas & Infaq';
+                    url = '/kas';
+                    actionHTML = `
+                        <div class="flex gap-3 mb-4 flex-wrap">
+                            <button onclick="tambahKas('pemasukan')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Infaq (Masuk)</button>
+                            <button onclick="tambahKas('pengeluaran')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-minus mr-1"></i> Catat Pengeluaran</button>
+                            <button onclick="downloadKasReport()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-file-pdf mr-1"></i> Unduh PDF</button>
+                        </div>
+                    `;
+                    columns = ['Tanggal', 'Jenis', 'Kategori', 'Keterangan', 'Nominal'];
+                    rowRenderer = (item) => `<tr>
+                        <td class="p-3 border-b">${formatTanggal(item.tanggal)}</td>
+                        <td class="p-3 border-b font-bold ${item.jenis === 'Pemasukan' ? 'text-green-600' : 'text-red-600'}">${item.jenis}</td>
+                        <td class="p-3 border-b">${item.sumber_kategori || '-'}</td>
+                        <td class="p-3 border-b">${item.keterangan || '-'}</td>
+                        <td class="p-3 border-b">${rupiah(item.nominal)}</td>
+                    </tr>`;
+                } else if (type === 'zakat') {
+                    title.innerText = 'Data Zakat';
+                    url = '/zakat';
+                    columns = ['Tanggal', 'Muzakki', 'Jenis Zakat', 'Nominal', 'Bukti', 'Status', 'Aksi'];
+                    rowRenderer = (item) => `<tr>
+                        <td class="p-3 border-b">${formatTanggal(item.tanggal)}</td>
+                        <td class="p-3 border-b font-bold">${item.nama_muzakki}</td>
+                        <td class="p-3 border-b">${item.jenis_zakat}</td>
+                        <td class="p-3 border-b">${rupiah(item.nominal)}</td>
+                        <td class="p-3 border-b">${item.bukti_transfer ? `<a href="${item.bukti_transfer}" target="_blank" class="text-blue-600 underline text-xs"><i class="fa-solid fa-image"></i> Lihat</a>` : '-'}</td>
+                        <td class="p-3 border-b"><span class="px-2 py-1 text-xs rounded-full ${item.status === 'Valid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${item.status}</span></td>
+                        <td class="p-3 border-b">
+                            ${item.status !== 'Valid' ? `<button onclick="updateZakatStatus(${item.id}, 'Valid')" class="text-green-600 hover:text-green-800 text-xs font-bold mr-2" title="Verifikasi"><i class="fa-solid fa-check"></i> Verifikasi</button>` : ''}
+                            <button onclick="hapusZakat(${item.id})" class="text-red-600 hover:text-red-800 text-xs font-bold" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                } else if (type === 'inventory') {
+                    title.innerText = 'Master Inventaris';
+                    url = '/inventory';
+                    actionHTML = `
+                        <div class="flex gap-3 mb-4">
+                            <button onclick="tambahInventaris()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Aset</button>
+                        </div>
+                    `;
+                    columns = ['Nama Aset', 'Jumlah', 'Kondisi', 'Terdaftar', 'Aksi'];
+                    rowRenderer = (item) => `<tr>
+                        <td class="p-3 border-b font-bold">${item.nama_aset}</td>
+                        <td class="p-3 border-b">${item.jumlah}</td>
+                        <td class="p-3 border-b">${item.kondisi}</td>
+                        <td class="p-3 border-b">${formatTanggal(item.created_at)}</td>
+                        <td class="p-3 border-b">
+                            <button onclick="editInventaris(${item.id}, ${JSON.stringify(item.nama_aset).replace(/"/g,'&quot;')}, ${item.jumlah}, ${JSON.stringify(item.kondisi).replace(/"/g,'&quot;')})" class="text-blue-600 hover:text-blue-800 text-xs font-bold mr-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="hapusInventaris(${item.id})" class="text-red-600 hover:text-red-800 text-xs font-bold"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                } else if (type === 'qurban-stok') {
+                    title.innerText = 'Stok Hewan Qurban';
+                    url = '/qurban-stok';
+                    columns = ['Foto', 'Jenis Hewan', 'Harga', 'Stok', 'Terdaftar'];
+                    rowRenderer = (item) => `<tr>
+                        <td class="p-3 border-b">${item.foto_hewan ? `<img src="${item.foto_hewan}" class="w-16 h-12 object-cover rounded">` : '-'}</td>
+                        <td class="p-3 border-b font-bold">${item.jenis_hewan}</td>
+                        <td class="p-3 border-b">${rupiah(item.harga)}</td>
+                        <td class="p-3 border-b">${item.stok} Ekor</td>
+                        <td class="p-3 border-b">${formatTanggal(item.created_at)}</td>
+                    </tr>`;
+                } else if (type === 'qurban-transaksi') {
+                    title.innerText = 'Transaksi Qurban';
+                    url = '/qurban-transaksi';
+                    columns = ['Tanggal', 'Pekurban', 'Hewan', 'Bukti', 'Status', 'Aksi'];
+                    rowRenderer = (item) => `<tr>
+                        <td class="p-3 border-b">${formatTanggal(item.created_at)}</td>
+                        <td class="p-3 border-b font-bold">${item.nama_pembeli}</td>
+                        <td class="p-3 border-b">${item.qurban_stok?.jenis_hewan || '-'}</td>
+                        <td class="p-3 border-b">${item.bukti_transfer ? `<a href="${item.bukti_transfer}" target="_blank" class="text-blue-600 underline text-xs"><i class="fa-solid fa-image"></i> Lihat</a>` : '-'}</td>
+                        <td class="p-3 border-b"><span class="px-2 py-1 text-xs rounded-full ${item.status === 'Disembelih' ? 'bg-green-100 text-green-700' : item.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}">${item.status}</span></td>
+                        <td class="p-3 border-b">
+                            ${item.status === 'Pending' ? `<button onclick="updateQurbanStatus(${item.id}, 'Diterima')" class="text-blue-600 hover:text-blue-800 text-xs font-bold mr-2"><i class="fa-solid fa-check"></i> Terima</button>` : ''}
+                            ${item.status === 'Diterima' ? `<button onclick="updateQurbanStatus(${item.id}, 'Disembelih')" class="text-green-600 hover:text-green-800 text-xs font-bold mr-2"><i class="fa-solid fa-knife-kitchen"></i> Sembelih</button>` : ''}
+                        </td>
+                    </tr>`;
+                } else if (type === 'mustahik') {
+                    title.innerText = 'Daftar Mustahik';
+                    url = '/mustahik';
+                    actionHTML = `
+                        <div class="flex gap-3 mb-4">
+                            <button onclick="tambahMustahik()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Mustahik</button>
+                        </div>
+                    `;
+                    columns = ['Nama', 'Kategori', 'Alamat', 'Terdaftar'];
+                    rowRenderer = (item) => `<tr>
+                        <td class="p-3 border-b font-bold">${item.nama}</td>
+                        <td class="p-3 border-b">${item.kategori}</td>
+                        <td class="p-3 border-b">${item.alamat || '-'}</td>
+                        <td class="p-3 border-b">${formatTanggal(item.created_at)}</td>
+                    </tr>`;
+                } else if (type === 'pengurus') {
+                    title.innerText = 'Daftar Pengurus';
+                    url = '/pengurus';
+                    actionHTML = `
+                        <div class="flex gap-3 mb-4">
+                            <button onclick="tambahPengurus()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Pengurus</button>
+                        </div>
+                    `;
+                    columns = ['Nama', 'Jabatan', 'Jadwal', 'Terdaftar'];
+                    rowRenderer = (item) => `<tr>
+                        <td class="p-3 border-b font-bold">${item.nama}</td>
+                        <td class="p-3 border-b">${item.jabatan}</td>
+                        <td class="p-3 border-b">${item.jadwal || '-'}</td>
+                        <td class="p-3 border-b">${formatTanggal(item.created_at)}</td>
+                    </tr>`;
+                }
+
+                const response = await apiFetch(url);
+
+                if (response.ok) {
+                    const res = await response.json();
+                    let bodyHTML = actionHTML;
+                    if(res.data && res.data.length > 0) {
+                        let tableHTML = `<div class="overflow-x-auto"><table class="w-full text-left text-sm whitespace-nowrap"><thead class="uppercase tracking-wider border-b-2 text-gray-600 bg-gray-50"><tr>`;
+                        columns.forEach(col => { tableHTML += `<th class="p-3">${col}</th>` });
+                        tableHTML += `</tr></thead><tbody>`;
+                        res.data.forEach(item => { tableHTML += rowRenderer(item) });
+                        tableHTML += `</tbody></table></div>`;
+                        bodyHTML += tableHTML;
+                    } else {
+                        bodyHTML += '<div class="text-center py-10 text-gray-500"><i class="fa-solid fa-folder-open text-4xl mb-3 block"></i> Belum ada data.</div>';
+                    }
+                    content.innerHTML = bodyHTML;
+                } else {
+                    throw new Error("Gagal mengambil data");
+                }
+            } catch (err) {
+                content.innerHTML = `<div class="text-center py-10 text-red-500"><i class="fa-solid fa-circle-exclamation text-4xl mb-3 block"></i> Gagal memuat data dari API.</div>`;
+            }
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminDataModal').classList.add('hidden');
+        }
+
+        // --- Kelola Kas Admin ---
+        function tambahKas(jenis) {
+            const isPemasukan = jenis === 'pemasukan';
+            const endpoint = isPemasukan ? '/infaq' : '/pengeluaran';
+            const title = isPemasukan ? 'Tambah Pemasukan (Infaq)' : 'Catat Pengeluaran';
+            const defaultKategori = isPemasukan ? 'Infaq Masjid' : 'Operasional';
+
+            Swal.fire({
+                title: title,
+                html: `
+                    <div class="text-left">
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nominal (Rp)</label>
+                            <input id="swal-kas-nominal" type="number" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contoh: 150000" min="1000">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sumber / Kategori</label>
+                            <input id="swal-kas-kategori" type="text" class="w-full border border-gray-300 rounded px-3 py-2" value="${defaultKategori}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
+                            <input id="swal-kas-keterangan" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contoh: Dari hamba allah / Beli Token Listrik">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: isPemasukan ? '#059669' : '#dc2626',
+                confirmButtonText: 'Simpan Data',
+                cancelButtonText: 'Batal',
+                preConfirm: () => {
+                    const nominal = document.getElementById('swal-kas-nominal').value;
+                    const kategori = document.getElementById('swal-kas-kategori').value;
+                    const keterangan = document.getElementById('swal-kas-keterangan').value;
+                    
+                    if (!nominal || !kategori) {
+                        Swal.showValidationMessage('Nominal dan Kategori wajib diisi!');
+                        return false;
+                    }
+                    return { nominal: parseInt(nominal), sumber_kategori: kategori, keterangan: keterangan };
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                    try {
+                        const response = await apiFetch(endpoint, {
+                            method: 'POST',
+                            body: JSON.stringify(result.value)
+                        });
+                        if (response.ok) {
+                            Swal.fire('Berhasil!', 'Data kas berhasil dicatat.', 'success').then(() => {
+                                openAdminDataModal('kas');
+                                renderAdminDashboard();
+                            });
+                        } else {
+                            const resData = await response.json();
+                            Swal.fire('Gagal', resData.message || resData.error || 'Gagal menyimpan data.', 'error');
+                        }
+                    } catch (e) {
+                        Swal.fire('Kesalahan', 'Terjadi kesalahan jaringan.', 'error');
+                    }
+                }
+            });
+        }
+
+        // --- Verifikasi & Hapus Zakat ---
+        async function updateZakatStatus(id, status) {
+            const result = await Swal.fire({
+                title: 'Verifikasi Zakat?',
+                text: `Tandai zakat #${id} sebagai ${status}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                confirmButtonText: 'Ya, Verifikasi'
+            });
+            if (!result.isConfirmed) return;
+            try {
+                const res = await apiFetch('/zakat/' + id, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status })
+                });
+                if (res.ok) {
+                    Swal.fire('Berhasil', 'Status zakat diperbarui.', 'success').then(() => openAdminDataModal('zakat'));
+                } else {
+                    const d = await res.json();
+                    Swal.fire('Gagal', d.message || d.error || 'Gagal memperbarui status.', 'error');
+                }
+            } catch (e) {
+                Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error');
+            }
+        }
+
+        async function hapusZakat(id) {
+            const result = await Swal.fire({
+                title: 'Hapus data zakat?',
+                text: 'Tindakan ini tidak dapat dibatalkan.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Ya, Hapus'
+            });
+            if (!result.isConfirmed) return;
+            try {
+                const res = await apiFetch('/zakat/' + id, { method: 'DELETE' });
+                if (res.ok) {
+                    Swal.fire('Berhasil', 'Data zakat dihapus.', 'success').then(() => openAdminDataModal('zakat'));
+                } else {
+                    Swal.fire('Gagal', 'Tidak dapat menghapus data.', 'error');
+                }
+            } catch (e) {
+                Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error');
+            }
+        }
+
+        // --- CRUD Inventaris ---
+        function tambahInventaris() {
+            Swal.fire({
+                title: 'Tambah Aset Inventaris',
+                html: `
+                    <div class="text-left">
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Aset</label>
+                            <input id="swal-inv-nama" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contoh: Karpet Sajadah">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
+                            <input id="swal-inv-jumlah" type="number" class="w-full border border-gray-300 rounded px-3 py-2" min="1" value="1">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kondisi</label>
+                            <select id="swal-inv-kondisi" class="w-full border border-gray-300 rounded px-3 py-2">
+                                <option>Sangat Baik</option>
+                                <option>Baik</option>
+                                <option>Cukup</option>
+                                <option>Rusak Ringan</option>
+                                <option>Rusak Berat</option>
+                            </select>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                confirmButtonText: 'Simpan',
+                preConfirm: () => {
+                    const nama = document.getElementById('swal-inv-nama').value.trim();
+                    const jumlah = document.getElementById('swal-inv-jumlah').value;
+                    const kondisi = document.getElementById('swal-inv-kondisi').value;
+                    if (!nama || !jumlah) {
+                        Swal.showValidationMessage('Nama dan Jumlah wajib diisi.');
+                        return false;
+                    }
+                    return { nama_aset: nama, jumlah: parseInt(jumlah), kondisi };
+                }
+            }).then(async (r) => {
+                if (!r.isConfirmed) return;
+                try {
+                    const res = await apiFetch('/inventory', { method: 'POST', body: JSON.stringify(r.value) });
+                    if (res.ok) {
+                        Swal.fire('Berhasil', 'Aset ditambahkan.', 'success').then(() => openAdminDataModal('inventory'));
+                    } else {
+                        const d = await res.json();
+                        Swal.fire('Gagal', d.message || d.error || 'Gagal menyimpan.', 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error');
+                }
+            });
+        }
+
+        function editInventaris(id, nama, jumlah, kondisi) {
+            Swal.fire({
+                title: 'Edit Aset Inventaris',
+                html: `
+                    <div class="text-left">
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Aset</label>
+                            <input id="swal-inv-nama" type="text" class="w-full border border-gray-300 rounded px-3 py-2" value="${nama || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
+                            <input id="swal-inv-jumlah" type="number" class="w-full border border-gray-300 rounded px-3 py-2" min="1" value="${jumlah || 1}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kondisi</label>
+                            <select id="swal-inv-kondisi" class="w-full border border-gray-300 rounded px-3 py-2">
+                                ${['Sangat Baik','Baik','Cukup','Rusak Ringan','Rusak Berat'].map(k => `<option ${k===kondisi?'selected':''}>${k}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                confirmButtonText: 'Simpan',
+                preConfirm: () => ({
+                    nama_aset: document.getElementById('swal-inv-nama').value.trim(),
+                    jumlah: parseInt(document.getElementById('swal-inv-jumlah').value),
+                    kondisi: document.getElementById('swal-inv-kondisi').value
+                })
+            }).then(async (r) => {
+                if (!r.isConfirmed) return;
+                try {
+                    const res = await apiFetch('/inventory/' + id, { method: 'PUT', body: JSON.stringify(r.value) });
+                    if (res.ok) Swal.fire('Berhasil', 'Aset diperbarui.', 'success').then(() => openAdminDataModal('inventory'));
+                    else {
+                        const d = await res.json();
+                        Swal.fire('Gagal', d.message || d.error || 'Gagal memperbarui.', 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error');
+                }
+            });
+        }
+
+        async function hapusInventaris(id) {
+            const r = await Swal.fire({
+                title: 'Hapus aset?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Ya, Hapus'
+            });
+            if (!r.isConfirmed) return;
+            try {
+                const res = await apiFetch('/inventory/' + id, { method: 'DELETE' });
+                if (res.ok) Swal.fire('Berhasil', 'Aset dihapus.', 'success').then(() => openAdminDataModal('inventory'));
+                else Swal.fire('Gagal', 'Tidak dapat menghapus aset.', 'error');
+            } catch (e) { Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error'); }
+        }
+
+        // --- Update status qurban transaksi ---
+        async function updateQurbanStatus(id, status) {
+            const r = await Swal.fire({
+                title: `Ubah status menjadi "${status}"?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                confirmButtonText: 'Ya'
+            });
+            if (!r.isConfirmed) return;
+            try {
+                const res = await apiFetch('/qurban-transaksi/' + id, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status })
+                });
+                if (res.ok) Swal.fire('Berhasil', 'Status diperbarui.', 'success').then(() => openAdminDataModal('qurban-transaksi'));
+                else {
+                    const d = await res.json();
+                    Swal.fire('Gagal', d.message || d.error || 'Gagal memperbarui.', 'error');
+                }
+            } catch (e) { Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error'); }
+        }
+
+        // --- Mustahik & Pengurus ---
+        function tambahMustahik() {
+            Swal.fire({
+                title: 'Tambah Mustahik',
+                html: `
+                    <div class="text-left">
+                        <div class="mb-3"><label class="block text-sm font-medium mb-1">Nama</label><input id="swal-m-nama" type="text" class="w-full border rounded px-3 py-2"></div>
+                        <div class="mb-3"><label class="block text-sm font-medium mb-1">Kategori</label>
+                            <select id="swal-m-kategori" class="w-full border rounded px-3 py-2">
+                                <option>Fakir</option><option>Miskin</option><option>Amil</option><option>Mualaf</option>
+                                <option>Riqab</option><option>Gharim</option><option>Fisabilillah</option><option>Ibnu Sabil</option>
+                            </select>
+                        </div>
+                        <div class="mb-3"><label class="block text-sm font-medium mb-1">Alamat</label><input id="swal-m-alamat" type="text" class="w-full border rounded px-3 py-2"></div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                confirmButtonText: 'Simpan',
+                preConfirm: () => {
+                    const nama = document.getElementById('swal-m-nama').value.trim();
+                    if (!nama) { Swal.showValidationMessage('Nama wajib diisi.'); return false; }
+                    return {
+                        nama,
+                        kategori: document.getElementById('swal-m-kategori').value,
+                        alamat: document.getElementById('swal-m-alamat').value.trim()
+                    };
+                }
+            }).then(async (r) => {
+                if (!r.isConfirmed) return;
+                try {
+                    const res = await apiFetch('/mustahik', { method: 'POST', body: JSON.stringify(r.value) });
+                    if (res.ok) Swal.fire('Berhasil', 'Mustahik ditambahkan.', 'success').then(() => openAdminDataModal('mustahik'));
+                    else {
+                        const d = await res.json();
+                        Swal.fire('Gagal', d.message || d.error || 'Gagal menyimpan.', 'error');
+                    }
+                } catch (e) { Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error'); }
+            });
+        }
+
+        function tambahPengurus() {
+            Swal.fire({
+                title: 'Tambah Pengurus',
+                html: `
+                    <div class="text-left">
+                        <div class="mb-3"><label class="block text-sm font-medium mb-1">Nama</label><input id="swal-p-nama" type="text" class="w-full border rounded px-3 py-2"></div>
+                        <div class="mb-3"><label class="block text-sm font-medium mb-1">Jabatan</label><input id="swal-p-jabatan" type="text" class="w-full border rounded px-3 py-2" placeholder="Contoh: Takmir, Bendahara"></div>
+                        <div class="mb-3"><label class="block text-sm font-medium mb-1">Jadwal</label><input id="swal-p-jadwal" type="text" class="w-full border rounded px-3 py-2" placeholder="Contoh: Senin-Jumat"></div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                confirmButtonText: 'Simpan',
+                preConfirm: () => {
+                    const nama = document.getElementById('swal-p-nama').value.trim();
+                    const jabatan = document.getElementById('swal-p-jabatan').value.trim();
+                    if (!nama || !jabatan) { Swal.showValidationMessage('Nama & jabatan wajib diisi.'); return false; }
+                    return {
+                        nama, jabatan,
+                        jadwal: document.getElementById('swal-p-jadwal').value.trim()
+                    };
+                }
+            }).then(async (r) => {
+                if (!r.isConfirmed) return;
+                try {
+                    const res = await apiFetch('/pengurus', { method: 'POST', body: JSON.stringify(r.value) });
+                    if (res.ok) Swal.fire('Berhasil', 'Pengurus ditambahkan.', 'success').then(() => openAdminDataModal('pengurus'));
+                    else {
+                        const d = await res.json();
+                        Swal.fire('Gagal', d.message || d.error || 'Gagal menyimpan.', 'error');
+                    }
+                } catch (e) { Swal.fire('Kesalahan', 'Tidak dapat terhubung ke API.', 'error'); }
+            });
+        }
+
+        // --- Unduh Laporan PDF ---
+        async function downloadKasReport() {
+            Swal.fire({ title: 'Menyiapkan PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const res = await apiFetch('/kas/report');
+                if (!res.ok) throw new Error('Gagal mengunduh');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `laporan-kas-${new Date().toISOString().slice(0,10)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                Swal.close();
+            } catch (e) {
+                Swal.fire('Gagal', 'Tidak dapat mengunduh laporan PDF.', 'error');
+            }
+        }
+
+        // --- Zakat Functions ---
+        function openZakatModal() {
+            document.getElementById('zakatModal').classList.remove('hidden');
+        }
+
+        function closeZakatModal() {
+            document.getElementById('zakatModal').classList.add('hidden');
+            document.getElementById('zakatForm').reset();
+        }
+
+        async function submitZakat(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btnSubmitZakat');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+
+            try {
+                const formData = new FormData();
+                formData.append('nama_muzakki', document.getElementById('namaMuzakki').value);
+                formData.append('jenis_zakat', document.getElementById('jenisZakat').value);
+                formData.append('nominal', document.getElementById('nominalZakat').value);
+                
+                const fileInput = document.getElementById('buktiTransfer');
+                if (fileInput && fileInput.files.length > 0) {
+                    formData.append('image', fileInput.files[0]);
+                }
+
+                const response = await apiFetch('/zakat', { method: 'POST', body: formData });
+
+                const textData = await response.text();
+                let data = {};
+                try {
+                    data = JSON.parse(textData);
+                } catch(e) {
+                    console.error("API response is not JSON:", textData);
+                    throw new Error("Server response invalid");
+                }
+
+                if (response.ok) {
+                    Swal.fire('Alhamdulillah', 'Pembayaran Zakat berhasil dikirim dan menunggu verifikasi Admin.', 'success').then(() => {
+                        closeZakatModal();
+                        // Refresh data dashboard jika diperlukan
+                        const role = localStorage.getItem('role');
+                        if (role === 'admin') {
+                            renderAdminDashboard();
+                        } else {
+                            fetchMemberDashboardData(localStorage.getItem('token'));
+                        }
+                    });
+                } else {
+                    Swal.fire('Gagal', data.message || data.error || 'Gagal mengirim zakat.', 'error');
+                }
+            } catch (error) {
+                console.error("Submit error:", error);
+                Swal.fire('Kesalahan', 'Gagal memproses pengiriman zakat. Periksa koneksi Anda.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Zakat';
+            }
+        }
+    </script>
+</body>
+</html>
