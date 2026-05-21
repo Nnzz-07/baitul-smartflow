@@ -118,7 +118,7 @@
                 <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-emerald-500">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Total Saldo Kas</p>
+                            <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Total Saldo Infaq</p>
                             <h3 class="text-2xl font-bold text-gray-800">Rp 15.450.000</h3>
                         </div>
                         <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xl"><i class="fa-solid fa-wallet"></i></div>
@@ -154,8 +154,8 @@
             `;
 
             document.getElementById('quickMenu').innerHTML = `
-                <button onclick="openAdminDataModal('kas')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
-                    <i class="fa-solid fa-cash-register block text-3xl mb-2 text-emerald-500"></i> Kelola Kas
+                <button onclick="openAdminDataModal('Infaq')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
+                    <i class="fa-solid fa-cash-register block text-3xl mb-2 text-emerald-500"></i> Kelola Infaq
                 </button>
                 <button onclick="openAdminDataModal('zakat')" class="p-4 border rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition text-center text-emerald-700 font-medium">
                     <i class="fa-solid fa-scale-balanced block text-3xl mb-2 text-emerald-500"></i> Data Zakat
@@ -202,7 +202,7 @@
                                 <div>
                                     <p class="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Total Infaq</p>
                                     <h3 class="text-2xl font-bold text-gray-800">
-                                        Rp ${(data.data?.total_infaq || 0).toLocaleString('id-ID')}
+                                        Rp ${(data.data?.total_Infaq || 0).toLocaleString('id-ID')}
                                     </h3>
                                 </div>
                                 <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl"><i class="fa-solid fa-money-bill-transfer"></i></div>
@@ -266,13 +266,13 @@
                 let rowRenderer = null;
                 let actionHTML = '';
 
-                if (type === 'kas') {
-                    title.innerText = 'Kelola Kas & Infaq';
+                if (type === 'Infaq') {
+                    title.innerText = 'Kelola Infaq';
                     url = 'https://baitul-smartflow-api-1777252841.fly.dev/api/kas';
                     actionHTML = `
                         <div class="flex gap-3 mb-4">
-                            <button onclick="tambahKas('pemasukan')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Infaq (Masuk)</button>
-                            <button onclick="tambahKas('pengeluaran')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-minus mr-1"></i> Catat Pengeluaran</button>
+                            <button onclick="tambahInfaq('pemasukan')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Infaq (Masuk)</button>
+                            <button onclick="tambahInfaq('pengeluaran')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-minus mr-1"></i> Catat Pengeluaran</button>
                         </div>
                     `;
                     columns = ['Tanggal', 'Jenis', 'Kategori', 'Keterangan', 'Nominal'];
@@ -344,10 +344,10 @@
             document.getElementById('adminDataModal').classList.add('hidden');
         }
 
-        // --- Kelola Kas Admin ---
-        function tambahKas(jenis) {
+        // --- Kelola Infaq Admin ---
+        function tambahInfaq(jenis) {
             const isPemasukan = jenis === 'pemasukan';
-            const endpoint = isPemasukan ? '/api/infaq' : '/api/pengeluaran';
+            const endpoint = isPemasukan ? '/api/kas' : '/api/pengeluaran';
             const title = isPemasukan ? 'Tambah Pemasukan (Infaq)' : 'Catat Pengeluaran';
             const defaultKategori = isPemasukan ? 'Infaq Masjid' : 'Operasional';
 
@@ -357,15 +357,15 @@
                     <div class="text-left">
                         <div class="mb-3">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Nominal (Rp)</label>
-                            <input id="swal-kas-nominal" type="number" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contoh: 150000" min="1000">
+                            <input id="swal-Infaq-nominal" type="number" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contoh: 150000" min="1000">
                         </div>
                         <div class="mb-3">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Sumber / Kategori</label>
-                            <input id="swal-kas-kategori" type="text" class="w-full border border-gray-300 rounded px-3 py-2" value="${defaultKategori}">
+                            <input id="swal-Infaq-kategori" type="text" class="w-full border border-gray-300 rounded px-3 py-2" value="${defaultKategori}">
                         </div>
                         <div class="mb-3">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
-                            <input id="swal-kas-keterangan" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contoh: Dari hamba allah / Beli Token Listrik">
+                            <input id="swal-Infaq-keterangan" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contoh: Dari hamba allah / Beli Token Listrik">
                         </div>
                     </div>
                 `,
@@ -374,9 +374,9 @@
                 confirmButtonText: 'Simpan Data',
                 cancelButtonText: 'Batal',
                 preConfirm: () => {
-                    const nominal = document.getElementById('swal-kas-nominal').value;
-                    const kategori = document.getElementById('swal-kas-kategori').value;
-                    const keterangan = document.getElementById('swal-kas-keterangan').value;
+                    const nominal = document.getElementById('swal-Infaq-nominal').value;
+                    const kategori = document.getElementById('swal-Infaq-kategori').value;
+                    const keterangan = document.getElementById('swal-Infaq-keterangan').value;
                     
                     if (!nominal || !kategori) {
                         Swal.showValidationMessage('Nominal dan Kategori wajib diisi!');
@@ -398,9 +398,9 @@
                             body: JSON.stringify(result.value)
                         });
                         if (response.ok) {
-                            Swal.fire('Berhasil!', 'Data kas berhasil dicatat.', 'success').then(() => {
-                                // Refresh modal kas
-                                openAdminDataModal('kas');
+                            Swal.fire('Berhasil!', 'Data Infaq berhasil dicatat.', 'success').then(() => {
+                                // Refresh modal Infaq
+                                openAdminDataModal('Infaq');
                             });
                         } else {
                             const resData = await response.json();
